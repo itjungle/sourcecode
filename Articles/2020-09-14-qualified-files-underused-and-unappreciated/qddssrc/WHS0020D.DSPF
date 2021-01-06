@@ -1,0 +1,48 @@
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      REF(WAREHOUSE1)
+
+     A          R S1                        SFL
+     A            OPTION         1A  B  6  3
+     A            ID        R        O  6  8
+     A            NAME      R        O  6 12
+     A            MFGWHS    R        O  6 38
+     A            STATUS    R        O  6 43
+
+     A          R C1                        SFLCTL(S1)
+     A                                      SFLSIZ(0013)
+     A                                      SFLPAG(0012)
+     A                                      CA03(03 'Exit')
+     A                                      CA05(05 'Refresh')
+     A                                      OVERLAY
+     A  62                                  SFLDSP
+     A  61                                  SFLDSPCTL
+     A  63                                  SFLCLR
+     A  61                                  SFLEND(*MORE)
+     A            SCREEN        14A  O  1  2
+     A                                  1 27'Warehouse Master Maintenance'
+     A                                      COLOR(WHT)
+     A                                  1 72DATE  EDTCDE(Y)
+     A            OPTIONS       78A  O  3  2
+     A                                  5  2'Opt'     DSPATR(UL)
+     A                                  5  8'ID'      DSPATR(UL)
+     A                                  5 12'Name                    '
+     A                                                DSPATR(UL)
+     A                                  5 38'Mfg'     DSPATR(UL)
+     A                                  5 43'Status'  DSPATR(UL)
+
+     A          R S2
+     A                                 23  5'F3=Exit  F5=Refresh'
+
+     A          R W1
+     A                                      CA03(03 'Exit')
+     A                                      CA12(12 'Cancel')
+     A                                      WINDOW(8 21 9 50)
+     A                                  2 13'ID:'
+     A            ID        R        B  2 17
+     A                                  3 11'Name:'
+     A            NAME      R        B  3 17
+     A                                  4  3'Manufactures:'
+     A            MFGWHS    R        B  4 17
+     A                                  5  9'Status:'
+     A            STATUS    R        B  5 17
+     A                                  8  3'F12=Cancel' 

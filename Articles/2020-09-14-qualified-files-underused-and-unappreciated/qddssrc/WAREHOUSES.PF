@@ -1,0 +1,11 @@
+     A                                      UNIQUE
+     A          R WAREHOUSE
+     A            ID             2A
+     A            NAME          24A
+     A            STREET        24A
+     A            CITY          16A
+     A            STATE          2A
+     A            ZIP           10A
+     A            MFGWHS         1A
+     A            STATUS         1A
+     A          K ID 

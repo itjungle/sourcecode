@@ -1,0 +1,7 @@
+     A                                      UNIQUE
+     A          R WAREHOUSE                 PFILE(WAREHOUSES)
+     A            ID
+     A            NAME
+     A            MFGWHS
+     A            STATUS
+     A          K ID 

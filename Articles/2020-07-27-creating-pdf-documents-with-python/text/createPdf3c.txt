@@ -1,0 +1,201 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Script : createPdf3c.py
+# Author: Mike Larsen
+# Date written: 07/11/20
+# Purpose: Select records from the employee table and build a Pdf.
+#          Include a logo from a png.
+#          Include a digital signature from a png.
+#          In this script, I was testing to see if multiple pages
+#          were created automatically.  They were.
+#
+# Notes:   The Header and Footer are called automatically.
+#
+#          pip3 install ibm_db
+#          pip3 install fpdf
+#
+# ====================================================================*
+# Date      Programmer  Description                                   *
+#---------------------------------------------------------------------*
+# 07/11/20  M.Larsen    Original code.                                *
+#                                                                     *
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  * 
+
+# http://www.fpdf.org/en/doc/cell.htm
+# https://www.elated.com/create-nice-looking-pdfs-php-fpdf/
+# https://pyfpdf.readthedocs.io/en/latest/Tutorial/index.html
+
+from fpdf import FPDF
+import ibm_db_dbi as db2
+from datetime import datetime 
+
+lineNumber = 0
+
+# datetime object containing current date and time
+now = datetime.now()
+
+dt_string = now.strftime("%m/%d/%Y %H:%M:%S")	
+ 
+#---------------------------------------------------------------------
+# Set up the header and footer
+#---------------------------------------------------------------------
+
+class PDF(FPDF):
+	
+    def header(self):
+        
+        # - - - -
+        # first line of the header
+        
+        # Logo
+        # fpdf.image(name, x = None, y = None, w = 0, h = 0, type = '', link = '')
+        
+        self.image('/home/MLARSEN/logo_sample.png', 10, 8, 20, 20)
+        
+        # Arial bold 15
+        self.set_font('Arial', 'B', 15)
+        
+        # Move to the right
+        self.cell(80)
+        
+        # fpdf.cell(w, h = 0, txt = '', border = 0, ln = 0, 
+        #              align = '', fill = False, link = '')
+        # Title
+        #
+        # width = 40, height = 10, border = 0 (no border), 
+        # ln = 0 (0: to the right,
+        #         1: to the beginning of the next line,
+        #         2: below), align = Center
+        
+        self.cell(40, 10, 'Employee listing', 0, 0, 'C')
+        
+        # Line break
+        self.ln(20)
+        
+        # - - - -
+        # second line of the header
+        
+        self.set_font('Arial','U', 14.0)
+
+        self.cell(30, 10, txt = 'First name', border = 1, ln = 0)
+        self.cell(12, 10, txt = 'MI', border = 1, ln = 0)
+        self.cell(30, 10, txt = 'Last name', border = 1, ln = 0)
+        self.cell(30, 10, txt = 'Department', border = 1, ln = 0)
+        self.cell(30, 10, txt = 'Phone no.', border = 1, ln = 0)
+        self.cell(30, 10, txt = 'Job title', border = 1, ln = 0)
+
+        self.ln(12)
+
+    # Page footer
+    
+    def footer(self):
+    	
+        # Position at 1.5 cm from bottom
+        self.set_y(-15)
+        
+        # Arial italic 8
+        self.set_font('Arial', 'I', 8)
+        
+        # Page number
+        self.cell(0, 10, 'Page ' + str(self.page_no()) + '/{nb}', 0, 0, 'C')
+        
+        # date/time
+        self.cell(0, 10, dt_string, 0, 0, 'R')
+        
+#---------------------------------------------------------------------
+
+# Instantiation of inherited class
+
+pdf = PDF()
+pdf.alias_nb_pages()   # number of pages.  works automatically
+
+pdf.add_page()         # add a new page.  works automatically
+
+#---------------------------------------------------------------------
+# fetch rows from the Employee table
+#---------------------------------------------------------------------
+
+conn = db2.connect()
+
+cursor = conn.cursor()
+
+cursor.execute("Select FirstNme, MidInit, LastName, WorkDept, PhoneNo, Job "
+               " From Sample.Employee ")
+
+#---------------------------------------------------------------------
+# Cycle through the cursor and print a line for each employee
+#---------------------------------------------------------------------
+
+# set the font for the detail lines
+
+pdf.set_font("Arial", size = 12)
+
+for row in cursor:
+    
+    # color can either be RGB as I did below, or you can use hex:
+    #
+    # pdf.set_text_color(*hex2dec('#8B6914'))
+        
+    if row[5].strip() == 'MANAGER':
+        pdf.set_text_color(253, 7, 7)   # red
+    elif lineNumber == 0:
+        pdf.set_text_color(0, 0, 255)   # blue
+    else:
+        pdf.set_text_color(0, 0, 0)     # black
+    
+    # Keep in the same line and write again.
+    #
+    # the 'cell' method writes a cell to the document
+    
+    # pdf.cell(Cell width, Cell height, String to print, border = 1, ln = 0)
+    #
+    # border = 0 - no border (default)
+    # border - 1 - border 
+    #
+    # 'ln', when used in the 'cell' method:
+    # Indicates where the current position should go after the call. Possible values are: 
+    # 0: to the right
+    # 1: to the beginning of the next line
+    # 2: below 
+    
+    pdf.cell(30, 10, txt = row[0], border = 1, ln = 0)
+    pdf.cell(12, 10, txt = row[1], border = 1, ln = 0)
+    pdf.cell(30, 10, txt = row[2], border = 1, ln = 0)
+    pdf.cell(30, 10, txt = row[3], border = 1, ln = 0)
+    pdf.cell(30, 10, txt = row[4], border = 1, ln = 0)
+    pdf.cell(30, 10, txt = row[5], border = 1, ln = 0)
+    
+    # create a line break. default is 'mm' - millimeters
+        
+    pdf.ln(12)
+    
+    lineNumber += 1
+    
+#---------------------------------------------------------------------
+# Print a summary line.
+#---------------------------------------------------------------------    
+
+pdf.set_text_color(0, 0, 0)     # black 
+
+pdf.cell(50, 10, txt = 'Number of Employees', border = 0, ln = 0)
+pdf.cell(12, 10, txt = str(lineNumber), border = 0, ln = 0)
+
+# create a line break. default is 'mm' - millimeters
+        
+pdf.ln(10)
+
+# get the current x and y coordinates
+
+x = pdf.get_x() + 100       # +100 moves it over horizontally to the right
+y = pdf.get_y()
+
+# fpdf.image(name, x = None, y = None, w = 0, h = 0, type = '', link = '')
+
+pdf.image('/home/MLARSEN/mike_larsen_signature.png', x, y, 50, 15)
+
+#---------------------------------------------------------------------
+# Create the Pdf.
+#---------------------------------------------------------------------
+
+# 'F' = file
+
+pdf.output("createPdf3c.pdf", 'F')
