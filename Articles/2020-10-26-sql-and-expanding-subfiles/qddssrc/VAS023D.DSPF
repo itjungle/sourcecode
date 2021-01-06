@@ -1,0 +1,36 @@
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      REF(EMPS)
+     A                                      INDARA
+     
+     A          R SFL01                     SFL
+     A            CLOCK     R        O  8  2
+     A            NAME      R        O  8  9
+     A            TYPE      R        O  8 30
+     A            DEPARTMENTR        O  8 37
+     
+     A          R CTL01                     SFLCTL(SFL01)
+     A                                      CA03(03)
+     A                                      OVERLAY
+     A  41                                  SFLDSPCTL
+     A  42                                  SFLDSP
+     A  40                                  SFLCLR
+     A  43                                  SFLEND(*MORE)
+     A                                      SFLSIZ(6)
+     A                                      SFLPAG(5)
+     A                                      ROLLUP(10)
+     A            SFLRCDNBR      4S 0H      SFLRCDNBR
+     A                                  1 33'Employee Inquiry'
+     A                                  3  5'Sort:'
+     A            SORTOPTION     1   B  3 11
+     A                                  3 15'1=Name'
+     A                                  4 15'2=Department, Name'
+     A                                  5 15'3=Clock'
+     A                                  3 58'Select department:'
+     A            DEPARTMENT     2   B  3 77
+     A                                  7  2'Clock  Name                 Type  -
+     A                                       Department'
+     A                                      DSPATR(UL)
+     
+     A          R SCREEN01
+     A            MESSAGE       78   O 14  2
+     A                                 15  5'F3=Exit'
