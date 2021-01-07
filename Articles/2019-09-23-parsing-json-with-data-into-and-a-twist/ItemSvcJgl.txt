@@ -1,0 +1,149 @@
+**FREE
+ctl-opt option (*srcstmt : *nodebugio : *nounref);
+ctl-opt debug (*input);
+ctl-opt dftactgrp (*no);
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//  Program : ItemSvcJgl
+//  Author  : Mike Larsen
+//  Date Written: 09/18/2019
+//  Purpose : This program will consume the item retrieval Web Service
+//            and parse the results as json using data-into.
+//
+//  Notes:  make sure job is running under ccsid 37
+//
+//====================================================================*
+//   Date    Programmer  Description                                  *
+//--------------------------------------------------------------------*
+// 09/18/19  M.Larsen    Original code.                               *
+//                                                                    *
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
+
+// - - - - - - -
+// Workfields
+
+dcl-s WebServiceUrl        varchar(1024);
+dcl-s WebServiceHeaderJson varchar(1024);
+dcl-s CmdStr               char(1000);
+dcl-s itemJson             varchar(10000);
+
+dcl-ds itemDs        Qualified;
+       success       char(5);
+       classdesc     char(30);
+       numberofitems char(5);
+
+   dcl-ds itemlist      dim(50) inz;
+          itemnumber    char(5);
+          description   char(30);
+          unitofmeasure char(5);
+          itemclass     char(5);
+
+   end-ds itemlist;
+
+end-ds itemDs;
+
+// - - - -
+// Run CL Command
+
+dcl-pr Run     ExtPgm('QCMDEXC');
+       CmdStr  Char(3000) Options(*VarSize);
+       CmdLen  Packed(15:5) Const;
+       CmdDbcs Char(2) Const Options(*Nopass);
+End-pr;
+
+//--------------------------------------------------------
+
+setUp();
+consumeWsJson();
+parseJson();
+
+*Inlr = *On;
+Return;
+
+//--------------------------------------------------------
+// setUp subprocedure
+//--------------------------------------------------------
+
+dcl-proc setUp;
+
+  // - - - -
+  // these would be soft-coded parameters passed to the program
+
+  WebServiceUrl = 'http://YOUR_URL_HERE/web/services/RTVITEMSVC2/' +
+                  '?itemclass=02';
+
+  // since this web service was created to return either xml or json,
+  // you need to tell it which you want in the header.
+
+  WebServiceHeaderJson = '<httpHeader>-
+                         <header name="Accept" value="application/json" />-
+                         </httpHeader>';
+
+  // - - - -
+  // change job's ccsid to 37
+
+  CmdStr = 'CHGJOB CCSID(37)';
+
+  Callp Run(Cmdstr:%Size(CmdStr));
+
+end-proc setUp;
+
+//--------------------------------------------------------
+// consumeWsJson subprocedure
+//--------------------------------------------------------
+
+dcl-proc consumeWsJson;
+
+  // here is a snippet of the json being returned from the web service:
+
+  // {
+  //   "success": "True",
+  //   "classdesc": "CONSTRUCTION LUMBER",
+  //   "numberofitems": 21,
+  //   "itemlist":    [
+  //          {
+  //       "itemnumber": "02F",
+  //       "description": "CLEAR FIR - MISC ITEM",
+  //       "unitofmeasure": "EA",
+  //       "itemclass": "02"
+  //    },
+  //          {
+  //       "itemnumber": "021X03T",
+  //       "description": "1X3   TG CM  CL FIR",
+  //       "unitofmeasure": "LFT",
+  //       "itemclass": "02"
+  //    },
+
+  // since the highest level of the json array isn't named, we need to
+  // apply one to it so we can have it match the data structure we're
+  // loading the json into. That is done by concatenating ' "itemDs" : '
+  // with the HttpGetClob function.
+
+  Exec Sql
+    Select '{ "itemDs" : ' concat Systools.HttpGetClob
+            (:WebServiceUrl , :WebServiceHeaderJson) concat '}'
+     into :itemJson
+     from sysibm.sysdummy1;
+
+end-proc consumeWsJson;
+
+//--------------------------------------------------------
+// parseJson subprocedure
+//--------------------------------------------------------
+
+dcl-proc parseJson;
+
+  monitor;
+
+    Data-into itemDs %Data(%trim(itemJson):
+              'case=any allowextra=yes')
+               %Parser('JSONTSTLIB/JSONPARSE');
+
+  on-error;
+
+  // perform error handling.
+
+  endmon;
+
+end-proc parseJson;
+
+//- - - - - - - - - - - - - - 
